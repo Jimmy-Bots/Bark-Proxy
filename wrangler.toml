@@ -1,0 +1,24 @@
+name = "bark_proxy"
+main = "src/index.ts"
+compatibility_date = "2025-04-23"
+compatibility_flags = ["nodejs_compat"]
+
+# You can set environment variables here
+[vars]
+# Add any environment variables needed by your application
+
+# KV namespace configuration
+[[kv_namespaces]]
+binding = "RULES_STORE"  # This matches the binding name in your Env interface
+id = "YOUR_KV_NAMESPACE_ID"  # Replace with your actual KV namespace ID
+
+# You can also define environment-specific KV namespaces
+[env.production.kv_namespaces]
+[[env.production.kv_namespaces]]
+binding = "RULES_STORE"
+id = "PRODUCTION_KV_NAMESPACE_ID"
+
+[env.development.kv_namespaces]
+[[env.development.kv_namespaces]]
+binding = "RULES_STORE" 
+id = "DEVELOPMENT_KV_NAMESPACE_ID"
