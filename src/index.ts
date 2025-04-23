@@ -12,6 +12,12 @@ interface WebhookRule {
     icon?: string;                // Optional icon URL
     url?: string;                 // Optional URL to open
     sound?: string;               // Optional sound
+    badge?: string;               // Optional badge (any integer)
+    isArchive?: string;            // Optional isArchive (1 for true)
+    copy?: string;                // Optional text to copy
+    autoCopy?: string;            // Optional autoCopy (1 for true)
+    level?: 'critical' | 'active' | 'timeSensitive' | 'passive';  // Optional notification level
+    volume?: string;              // Optional volume (0-10, default 5)
   };
   barkUrl: string;                // Bark URL to send notification to
 }
@@ -143,7 +149,13 @@ async function sendToBark(rule: WebhookRule, data: any): Promise<Response> {
     group: rule.mapping.group ? replaceTemplateVars(rule.mapping.group, data) : undefined,
     icon: rule.mapping.icon ? replaceTemplateVars(rule.mapping.icon, data) : undefined,
     url: rule.mapping.url ? replaceTemplateVars(rule.mapping.url, data) : undefined,
-    sound: rule.mapping.sound ? replaceTemplateVars(rule.mapping.sound, data) : undefined
+    sound: rule.mapping.sound ? replaceTemplateVars(rule.mapping.sound, data) : undefined,
+    badge: rule.mapping.badge ? replaceTemplateVars(rule.mapping.badge, data) : undefined,
+    isArchive: rule.mapping.isArchive ? replaceTemplateVars(rule.mapping.isArchive, data) : undefined,
+    copy: rule.mapping.copy ? replaceTemplateVars(rule.mapping.copy, data) : undefined,
+    autoCopy: rule.mapping.autoCopy ? replaceTemplateVars(rule.mapping.autoCopy, data) : undefined,
+    level: rule.mapping.level ? replaceTemplateVars(rule.mapping.level, data) : undefined,
+    volume: rule.mapping.volume ? replaceTemplateVars(rule.mapping.volume, data) : undefined
   };
 
   // Filter out undefined values
