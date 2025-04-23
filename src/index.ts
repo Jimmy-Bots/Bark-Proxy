@@ -23,15 +23,115 @@ interface Env {
 
 // Utility function to extract value from object using dot notation path
 function getValueByPath(obj: any, path: string): any {
+  if (!obj || typeof obj !== 'object' || !path || typeof path !== 'string') {
+    return undefined;
+  }
+  
+  // Validate path to prevent prototype pollution and code injection
+  if (!/^[a-zA-Z0-9_.]+$/.test(path)) {
+    console.error(`Invalid path format: ${path}`);
+    return undefined;
+  }
+  
   const keys = path.split('.');
-  return keys.reduce((o, key) => (o && o[key] !== undefined) ? o[key] : undefined, obj);
+  return keys.reduce((o, key) => {
+    // Skip empty keys and disallow access to __proto__, constructor, or prototype
+    if (!key || key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      return undefined;
+    }
+    return (o && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, key)) ? o[key] : undefined;
+  }, obj);
 }
 
-// Utility function to replace template variables in string
+// Safe evaluation function for template expressions using a limited expression evaluator
+function evaluateExpression(expression: string, data: any): any {
+  // Define allowed operators and their implementations
+  const operators = {
+    '===': (a: any, b: any) => a === b,
+    '!==': (a: any, b: any) => a !== b,
+    '==': (a: any, b: any) => a == b, 
+    '!=': (a: any, b: any) => a != b,
+    '>': (a: any, b: any) => a > b,
+    '<': (a: any, b: any) => a < b,
+    '>=': (a: any, b: any) => a >= b,
+    '<=': (a: any, b: any) => a <= b,
+    '&&': (a: any, b: any) => a && b,
+    '||': (a: any, b: any) => a || b,
+  };
+
+  try {
+    // Handle ternary expressions (most common use case)
+    const ternaryMatch = expression.match(/^\s*(.+?)\s*\?\s*(.+?)\s*:\s*(.+?)\s*$/);
+    if (ternaryMatch) {
+      const [_, condition, trueExpr, falseExpr] = ternaryMatch;
+      
+      // Parse condition (supports only simple comparisons)
+      let conditionResult = false;
+      
+      for (const [op, func] of Object.entries(operators)) {
+        if (condition.includes(op)) {
+          const [left, right] = condition.split(op).map(part => {
+            part = part.trim();
+            // Handle path references
+            if (/^[\w.]+$/.test(part)) {
+              return getValueByPath(data, part);
+            }
+            // Handle string literals
+            if (/^['"](.*)['"]$/.test(part)) {
+              return part.substring(1, part.length - 1);
+            }
+            // Handle number literals
+            if (/^-?\d+(\.\d+)?$/.test(part)) {
+              return Number(part);
+            }
+            // Handle booleans
+            if (part === 'true') return true;
+            if (part === 'false') return false;
+            return part;
+          });
+          
+          conditionResult = func(left, right);
+          break;
+        }
+      }
+      
+      // Evaluate result based on condition
+      if (conditionResult) {
+        if (/^['"](.*)['"]$/.test(trueExpr)) {
+          return trueExpr.substring(1, trueExpr.length - 1);
+        }
+        return getValueByPath(data, trueExpr.trim());
+      } else {
+        if (/^['"](.*)['"]$/.test(falseExpr)) {
+          return falseExpr.substring(1, falseExpr.length - 1);
+        }
+        return getValueByPath(data, falseExpr.trim());
+      }
+    }
+    
+    // For non-ternary expressions, just treat as a path
+    return getValueByPath(data, expression.trim());
+  } catch (error) {
+    console.error(`Error evaluating expression: ${expression}`, error);
+    return "";
+  }
+}
+
+// Enhanced template variable replacement function
 function replaceTemplateVars(template: string, data: any): string {
-  return template.replace(/\${([\w.]+)}/g, (_, path) => {
-    const value = getValueByPath(data, path);
-    return value !== undefined ? String(value) : '';
+  // Handle two types of template variables:
+  // 1. Simple path references: ${path.to.value}
+  // 2. Expressions: ${path === 'value' ? 'result1' : 'result2'}
+  return template.replace(/\${([^}]+)}/g, (match, expression) => {
+    // Check if this is a simple path or an expression
+    if (/^[\w.]+$/.test(expression)) {
+      // Simple path
+      const value = getValueByPath(data, expression);
+      return value !== undefined ? String(value) : '';
+    } else {
+      // Expression to evaluate
+      return String(evaluateExpression(expression, data) || '');
+    }
   });
 }
 
@@ -43,7 +143,7 @@ async function sendToBark(rule: WebhookRule, data: any): Promise<Response> {
     group: rule.mapping.group ? replaceTemplateVars(rule.mapping.group, data) : undefined,
     icon: rule.mapping.icon ? replaceTemplateVars(rule.mapping.icon, data) : undefined,
     url: rule.mapping.url ? replaceTemplateVars(rule.mapping.url, data) : undefined,
-    sound: rule.mapping.sound
+    sound: rule.mapping.sound ? replaceTemplateVars(rule.mapping.sound, data) : undefined
   };
 
   // Filter out undefined values
