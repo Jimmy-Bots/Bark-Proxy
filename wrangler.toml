@@ -9,5 +9,5 @@ compatibility_flags = ["nodejs_compat"]
 
 # KV namespace configuration
 [[kv_namespaces]]
-binding = "RULES_STORE"  # This matches the binding name in your Env interface
+binding = "bark_proxy_rule"  # This matches the binding name in your Env interface
 id = "YOUR_KV_NAMESPACE_ID"  # Replace with your actual KV namespace ID

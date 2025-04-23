@@ -18,7 +18,7 @@ interface WebhookRule {
 
 // Define the KV bindings interface
 interface Env {
-  RULES_STORE: KVNamespace;
+  bark_proxy_rule: KVNamespace;
 }
 
 // Utility function to extract value from object using dot notation path
@@ -215,7 +215,7 @@ app.post('/rules', async (c) => {
       throw new HTTPException(400, { message: 'Missing required fields' });
     }
     
-    await saveRule(c.env.RULES_STORE, rule);
+    await saveRule(c.env.bark_proxy_rule, rule);
     
     return c.json({ message: 'Rule saved successfully', id: rule.id });
   } catch (error) {
@@ -225,14 +225,14 @@ app.post('/rules', async (c) => {
 
 // Get all rules
 app.get('/rules', async (c) => {
-  const rules = await getAllRules(c.env.RULES_STORE);
+  const rules = await getAllRules(c.env.bark_proxy_rule);
   return c.json(rules);
 })
 
 // Get rule by ID
 app.get('/rules/:id', async (c) => {
   const id = c.req.param('id');
-  const rule = await getRuleById(c.env.RULES_STORE, id);
+  const rule = await getRuleById(c.env.bark_proxy_rule, id);
   
   if (!rule) {
     return c.json({ error: 'Rule not found' }, 404);
@@ -244,7 +244,7 @@ app.get('/rules/:id', async (c) => {
 // Delete rule
 app.delete('/rules/:id', async (c) => {
   const id = c.req.param('id');
-  const deleted = await deleteRule(c.env.RULES_STORE, id);
+  const deleted = await deleteRule(c.env.bark_proxy_rule, id);
   
   if (!deleted) {
     return c.json({ error: 'Rule not found' }, 404);
@@ -267,7 +267,7 @@ app.post('/push', async (c) => {
     }
     
     // Find the rule by ID from KV
-    const rule = await getRuleById(c.env.RULES_STORE, ruleId);
+    const rule = await getRuleById(c.env.bark_proxy_rule, ruleId);
     
     if (!rule) {
       return c.json({ error: `Rule not found with ID: ${ruleId}` }, 404);

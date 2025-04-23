@@ -23,7 +23,7 @@ Bark Proxy is a Cloudflare Workers service that:
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/bark_proxy.git
+   git clone https://github.com/Jimmy-Bots/bark_proxy.git
    cd bark_proxy
    ```
 
@@ -34,25 +34,20 @@ Bark Proxy is a Cloudflare Workers service that:
 
 3. Create Cloudflare KV namespaces:
    ```bash
-   wrangler kv:namespace create "RULES_STORE"
-   wrangler kv:namespace create "RULES_STORE" --env production
-   wrangler kv:namespace create "RULES_STORE" --env development
+   wrangler kv namespace create "bark_proxy_rule"
    ```
 
 4. Update wrangler.toml with your KV namespace IDs:
    ```toml
    [[kv_namespaces]]
-   binding = "RULES_STORE"
+   binding = "bark_proxy_rule"
    id = "YOUR_KV_NAMESPACE_ID"  # Replace with actual ID
    ```
 
 5. Deploy to Cloudflare Workers:
    ```bash
-   # Deploy to development
-   wrangler deploy --env development
-
    # Deploy to production
-   wrangler deploy --env production
+   wrangler deploy
    ```
 
 ## 📘 API Documentation
@@ -86,6 +81,9 @@ Required fields:
 - `name`: Human-readable name
 - `mapping`: Template mapping with required `title` and `body` fields
 - `barkUrl`: Your Bark URL with key
+
+> **Beta Feature**: The template mapping supports basic ternary operations like `${condition ? trueValue : falseValue}`. This feature is experimental and may contain bugs.
+
 
 #### 📋 Get All Rules
 
@@ -198,7 +196,7 @@ Templates use the `${path.to.value}` syntax to extract values from the webhook p
 
 2. Test your endpoints:
    ```bash
-   curl -X POST http://localhost:8787/rules -H "Content-Type: application/json" -d '{"id":"test","name":"Test Rule","mapping":{"title":"Test Title","body":"Test Body"},"barkUrl":"https://api.day.app/YOUR_KEY"}'
+   curl -X POST http://host:port/rules -H "Content-Type: application/json" -d '{"id":"test","name":"Test Rule","mapping":{"title":"Test Title","body":"Test Body"},"barkUrl":"https://api.day.app/YOUR_KEY"}'
    ```
 
 ## 📄 License
